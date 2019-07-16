@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "include/asyncjsonrpc/AsyncJsonRPC.h"
+#include <atomic>
 #include <future>
 #include <string>
 

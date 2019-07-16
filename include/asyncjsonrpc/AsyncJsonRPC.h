@@ -3,8 +3,8 @@
 
 #include "detail/ThreadPool.h"
 
-#include "include/asyncjsonrpc/AsyncJsonRPCMethod.h"
-#include "include/asyncjsonrpc/JsonErrorCode.h"
+#include "AsyncJsonRPCMethod.h"
+#include "JsonErrorCode.h"
 #include <functional>
 #include <jsoncpp/json/json.h>
 #include <stdexcept>
