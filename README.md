@@ -31,7 +31,7 @@ AsyncJsonRPC for the rescue! So now, you can simply pass as many context variabl
         // res has the json response of the server
     });
 
-    // post is synchronous, and asyncPost is asynchonous
+    // post is synchronous, and asyncPost is asynchronous
     rpc.post(
         R"({"jsonrpc": "2.0", "method": "testmethod1", "params": {"p1": 5, "p2": "HiThere!!!"},
                 "id": 4})",
