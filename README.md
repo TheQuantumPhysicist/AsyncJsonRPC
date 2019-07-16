@@ -1,11 +1,11 @@
 # AsyncJsonRPC library
 
 ### Introduction
-The AsyncJsonRPC library is a simple, header-only, high-performance, thread-safe library that acts as the backend of an json rpc. It can be both synchronous and asynchronous. 
+The AsyncJsonRPC library is a simple, header-only, high-performance, thread-safe library that acts as the backend of a remote json-rpc system. It can be both synchronous and asynchronous. 
 
 The library doesn't contain any communication protocol. The way it works, from a high-level perspective, is that you post a string containing the jsonrpc call [according to the jsonrpc standard](https://www.jsonrpc.org/specification), and you will get a callback function with the response.
 
-### Context-per-call support -- or... why another jsonrpc library?
+### Context-per-call support... OR... why another jsonrpc library?
 
 The reason for developing this library is that I needed something that I couldn't find in any other jsonrpc library, which is passing a context with every call.
 
