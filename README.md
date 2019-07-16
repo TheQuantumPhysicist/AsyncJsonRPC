@@ -44,7 +44,7 @@ AsyncJsonRPC depends on two libraries:
 2. boost containers
 
 **libjsoncpp** is required for json parsing. That cannot be changed.
-**Boost** is necessary just for a [`flat_map`](https://www.boost.org/doc/libs/1_65_1/doc/html/boost/container/flat_map.html), which I used instead of `std::map`. This is done purely for performance. A `flat_map` uses a vector underneath, which guarantees cache locality and makes look-ups very fast. A hash-map isn't very suitable if performance is to be sought, because hashing strings isn't that fast. With a flat_map, for this specific problem where methods will be added once and will never be changed later. 
+**Boost** is necessary just for a [`flat_map`](https://www.boost.org/doc/libs/1_65_1/doc/html/boost/container/flat_map.html), which I used instead of `std::map`. This is done purely for performance. A `flat_map` uses a vector underneath, which guarantees cache locality and makes look-ups very fast. A hash-map isn't very suitable if performance is to be sought, because hashing strings isn't that fast. With a `flat_map`, for this specific problem where methods will be added once and will never be changed later. 
 
 **But I don't want boost!** in that case, just change the type from `flat_map` to `std::map` if performance isn't a big deal for you.
 
