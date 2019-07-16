@@ -9,7 +9,7 @@ The library doesn't contain any communication protocol. The way it works, from a
 
 The reason for developing this library is that I needed something that I couldn't find in any other jsonrpc library, which is passing a context with every call.
 
-Imagine you're running an http server where you receive restful requests. A user might pass a request that is json-rpc. Given that authentication (whether it's username/password or API key) shouldn't be in the rpc-call itself, for security reasons, how would a handler know how to create a stateful response based on the user?
+Imagine you're running an http server where you receive restful requests. A user might pass a request that is json-rpc. Given that authentication (whether it's username/password or API key) shouldn't be in the rpc-call itself, for security reasons, how would a handler know how to create a stateful response based on the user id or authentication token?
 
 There are ways to solve this problem, by wrapping everything in stateful classes. But this doesn't only create a performance hit, but can easily create thread-safety problems and can complicate the design.
 
