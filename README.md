@@ -51,7 +51,7 @@ AsyncJsonRPC depends on two libraries:
 **Conan as a dependency manager**: Conan retrieves boost for you and compiles it automatically for you. It's not necessary if you want to use your system version of boost. Feel free to change the `CMakeLists.txt` file and remove conan.
 
 ### Thread-safety
-Thread-safety is meant to be satisfied during operation. The only thread-safe methods are `AsyncJsonRPC::post()` and `AsyncJsonRPC::asyncPost()`. Anything else is **not thread-safe**, by design! Either that, all I'll have to stack mutexes all over the place :-)
+Thread-safety is meant to be satisfied during operation. The only thread-safe methods are `AsyncJsonRPC::post()` and `AsyncJsonRPC::asyncPost()`. Anything else is **not thread-safe**, by design! Either that, all I'll have to stack mutexes all over the place. I'm sure you don't want that :-)
 
 So, it's expected that you define your methods, handlers, callback in the main-thread, then start with the heavy-load stuff.
 
@@ -69,4 +69,4 @@ For example, run cmake with `-DSANITIZE_LEAK=ON` to enable leak sanitizer.
 ### Building
 You **do not** need to build this library to use it. Just include `#include "asyncjsonrpc/AsyncJsonRPC.h"` and it'll work. It's header only.
 
-You may, however, build the tests! Feel free to build then and run them. The `CMakeLists.txt` file in the root directory does that for you.
+You may, however, build the tests! Feel free to build and run them. The `CMakeLists.txt` file in the root directory does that for you.
