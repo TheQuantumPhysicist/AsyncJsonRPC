@@ -57,9 +57,9 @@ AsyncJsonRPCMethod<ContextParams...>::AsyncJsonRPCMethod(
     std::function<void(const Json::Value&, Json::Value&, ContextParams...)> HandlerClosure,
     std::string MethodName, const std::vector<Json::ValueType>& MethodParams)
 {
-    paramsDecl = ParamsDeclaration::ParamsByPos;
+    paramsDecl = ParamsDeclaration::ParamsByPosition;
     methodName = std::move(MethodName);
-    methodParameters_byPos.insert(MethodParams.cbegin(), MethodParams.cend());
+    methodParameters_byPos.assign(MethodParams.cbegin(), MethodParams.cend());
     handler = HandlerClosure;
 }
 

@@ -34,7 +34,7 @@ public:
 
     template <typename Handler>
     void addHandler(Handler handler, const std::string& methodName,
-                    const std::map<std::string, Json::ValueType>& MethodParamsTypes = {})
+                    const std::map<std::string, Json::ValueType>& MethodParamsTypes)
     {
         static_assert(std::is_convertible<Handler, std::function<void(const Json::Value&, Json::Value&,
                                                                       HandlerContext...)>>::value,
@@ -163,10 +163,11 @@ Json::Value AsyncJsonRPC<HandlerContext...>::getResponseForSingleRpcCall(
         return PutResultInResponseContext(std::move(result), requestId);
     } catch (JsonErrorCode& ex) {
         // create response from json error
+        ex.setRequestId(root["id"]);
         return ex.toJsonRpcResponse();
     } catch (std::exception& ex) {
         // create response from error
-        return JsonErrorCode::make_InternalError().toJsonRpcResponse();
+        return JsonErrorCode::make_InternalError(root["id"]).toJsonRpcResponse();
     }
 }
 
@@ -225,7 +226,7 @@ void AsyncJsonRPC<HandlerContext...>::post(const std::string& jsonCall, HandlerC
                 Json::Value response = getResponseForSingleRpcCall(root[i], idVal, handlerContext...);
                 arrayResponse.append(response);
             }
-            std::string arrayResponseStr = JsonValueToString(arrayResponse);
+            std::string arrayResponseStr = JsonErrorCode::JsonValueToString(arrayResponse);
             responseCallback(std::move(arrayResponseStr));
 
         } else if (root.type() == Json::ValueType::objectValue) {
@@ -236,7 +237,7 @@ void AsyncJsonRPC<HandlerContext...>::post(const std::string& jsonCall, HandlerC
             Json::Value response = getResponseForSingleRpcCall(root, root["id"], handlerContext...);
 
             // the result as string
-            responseCallback(JsonValueToString(response));
+            responseCallback(JsonErrorCode::JsonValueToString(response));
 
         } else {
             responseCallback(JsonErrorCode::make_ParseError().toJsonRpcResponseStr());

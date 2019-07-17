@@ -12,6 +12,10 @@ class JsonErrorCode : public std::exception
     Json::Value requestId;
 
 public:
+    inline std::string getMessage() const;
+    inline int         getCode() const;
+    inline Json::Value getRequestId() const;
+    inline void        setRequestId(Json::Value val);
     inline JsonErrorCode(int Code = 0, std::string Message = "", Json::Value requestId = Json::Value());
     inline Json::Value toJsonValue() const;
     inline Json::Value toJsonRpcResponse() const;
@@ -43,8 +47,22 @@ public:
         return JsonErrorCode(code, "Server error", requestId);
     }
 
+    static std::string JsonValueToString(const Json::Value& val)
+    {
+        Json::FastWriter fastWriter;
+        return fastWriter.write(val);
+    }
+
     inline const char* what() const noexcept override;
 };
+
+std::string JsonErrorCode::getMessage() const { return message; }
+
+int JsonErrorCode::getCode() const { return code; }
+
+Json::Value JsonErrorCode::getRequestId() const { return requestId; }
+
+void JsonErrorCode::setRequestId(Json::Value val) { requestId = std::move(val); }
 
 JsonErrorCode::JsonErrorCode(int Code, std::string Message, Json::Value RequestId)
     : code(Code), message(std::move(Message)), requestId(std::move(RequestId))
@@ -79,11 +97,5 @@ std::string JsonErrorCode::toJsonRpcResponseStr() const
 }
 
 const char* JsonErrorCode::what() const noexcept { return message.c_str(); }
-
-std::string JsonValueToString(const Json::Value& val)
-{
-    Json::FastWriter fastWriter;
-    return fastWriter.write(val);
-}
 
 #endif // JSONERRORCODE_H
