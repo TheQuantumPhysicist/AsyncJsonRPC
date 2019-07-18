@@ -2,7 +2,6 @@ include_directories(../include)
 
 add_executable(asyncjsonrpc_tests_exe
     test_general.cpp
-    test_threadpool.cpp
     ${GTEST_PATH}/src/gtest_main.cc
     )
 

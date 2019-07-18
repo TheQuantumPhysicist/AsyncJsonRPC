@@ -8,14 +8,14 @@
 #include <stdexcept>
 #include <type_traits>
 
-template <typename ExecutionContext, typename... HandlerContext>
+template <typename Executor, typename... HandlerContext>
 class AsyncJsonRPC
 {
     boost::container::flat_map<std::string, AsyncJsonRPCMethod<HandlerContext...>> methods;
 
     std::function<void(std::string&&)> responseCallback;
 
-    ExecutionContext& executionContext;
+    const Executor& executor;
 
     void basicRpcCallValidation(const Json::Value& root);
 
@@ -25,7 +25,7 @@ class AsyncJsonRPC
                                             HandlerContext... handlerContext);
 
 public:
-    AsyncJsonRPC(ExecutionContext& execContext) : executionContext(execContext) {}
+    AsyncJsonRPC(const Executor& executorRef) : executor(executorRef) {}
 
     template <typename Handler>
     void addHandler(Handler handler, const std::string& methodName,
@@ -255,8 +255,8 @@ template <typename ExecutionContext, typename... HandlerContext>
 void AsyncJsonRPC<ExecutionContext, HandlerContext...>::asyncPost(const std::string& jsonCall,
                                                                   HandlerContext... handlerContext)
 {
-    executionContext.post(
-        [this, jsonCall, handlerContext...]() { this->post(jsonCall, handlerContext...); });
+    executor.post([this, jsonCall, handlerContext...]() { this->post(jsonCall, handlerContext...); },
+                  std::allocator<char>());
 }
 
 #endif // ASYNCJSONRPC_H

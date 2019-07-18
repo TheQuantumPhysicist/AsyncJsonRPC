@@ -1,7 +1,6 @@
 #include "gtest/gtest.h"
 
 #include "include/asyncjsonrpc/AsyncJsonRPC.h"
-#include <asyncjsonrpc/detail/ThreadPool.h>
 #include <atomic>
 #include <future>
 #include <string>
@@ -25,8 +24,8 @@ std::string GenerateRandomString__test(const int len)
 
 TEST(AsyncJsonRPC, basic)
 {
-    boost::asio::io_context               executor;
-    AsyncJsonRPC<boost::asio::io_context> rpc(executor);
+    boost::asio::io_context                              executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type> rpc(executionContext.get_executor());
 
     EXPECT_FALSE(rpc.handlerExists("testmethod1"));
     EXPECT_EQ(rpc.handlerCount(), 0u);
@@ -50,8 +49,9 @@ TEST(AsyncJsonRPC, basic)
 
 TEST(AsyncJsonRPC, single_rpc_calls_successful)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -77,8 +77,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_successful)
 
 TEST(AsyncJsonRPC, async_single_rpc_calls_successful)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -105,15 +106,16 @@ TEST(AsyncJsonRPC, async_single_rpc_calls_successful)
                 "id": 4})",
         "TheString");
 
-    executor.run();
+    executionContext.run();
 
     future.get();
 }
 
 TEST(AsyncJsonRPC, async_many_single_rpc_calls_successful)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -154,62 +156,16 @@ TEST(AsyncJsonRPC, async_many_single_rpc_calls_successful)
         t.detach();
     }
 
-    executor.run();
-
-    future.get();
-}
-
-TEST(AsyncJsonRPC, async_many_single_rpc_calls_successful_threadpool)
-{
-    ThreadPool                            threadPool;
-    AsyncJsonRPC<ThreadPool, std::string> rpc(threadPool);
-
-    rpc.addHandler(
-        [](const Json::Value& request, Json::Value& response, std::string str) {
-            EXPECT_EQ(request["p1"].asInt(), 5);
-            EXPECT_EQ(request["p2"].asString(), "HiThere!!!");
-            EXPECT_EQ(str, "TheString");
-            response = Json::Value(15);
-        },
-        "testmethod1", {{"p1", Json::ValueType::intValue}, {"p2", Json::ValueType::stringValue}});
-
-    std::promise<void> promise;
-    std::future<void>  future = promise.get_future();
-
-    const unsigned        postCount = 250;
-    std::atomic<unsigned> currCount{0};
-    currCount.store(0); // ensure atomicity as constructor is not atomic
-
-    rpc.setResponseCallback([&promise, &currCount](std::string&& res) {
-        Json::Reader reader;
-        Json::Value  val;
-        reader.parse(res, val);
-        EXPECT_EQ(val["result"].asInt(), 15);
-
-        currCount++;
-
-        if (currCount >= postCount) {
-            promise.set_value();
-        }
-    });
-
-    for (unsigned i = 0; i < postCount; i++) {
-        std::thread t([&rpc]() {
-            rpc.asyncPost(
-                R"({"jsonrpc": "2.0", "method": "testmethod1", "params": {"p1": 5, "p2": "HiThere!!!"},
-                "id": 4})",
-                "TheString");
-        });
-        t.detach();
-    }
+    executionContext.run();
 
     future.get();
 }
 
 TEST(AsyncJsonRPC, single_rpc_calls_wrong_parameter_type)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -235,8 +191,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_wrong_parameter_type)
 
 TEST(AsyncJsonRPC, single_rpc_calls_one_less_parameter)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -262,8 +219,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_one_less_parameter)
 
 TEST(AsyncJsonRPC, single_rpc_calls_one_more_parameter)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -291,8 +249,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_one_more_parameter)
 
 TEST(AsyncJsonRPC, single_rpc_calls_missing_id)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -319,8 +278,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_missing_id)
 
 TEST(AsyncJsonRPC, single_rpc_calls_missing_jsonrpc_key)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -345,8 +305,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_missing_jsonrpc_key)
 
 TEST(AsyncJsonRPC, single_rpc_calls_wrong_jsonrpc_version)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -374,8 +335,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_wrong_jsonrpc_version)
 
 TEST(AsyncJsonRPC, single_rpc_calls_invalid_json)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     rpc.addHandler(
         [](const Json::Value& request, Json::Value& response, std::string str) {
@@ -403,8 +365,9 @@ TEST(AsyncJsonRPC, single_rpc_calls_invalid_json)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_successful)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // we use this count to process handling different array elements differently
     int count = 0;
@@ -452,8 +415,9 @@ TEST(AsyncJsonRPC, batch_rpc_calls_successful)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_one_invalid_parameter_type)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // we use this count to process handling different array elements differently
     int count = 0;
@@ -500,8 +464,9 @@ TEST(AsyncJsonRPC, batch_rpc_calls_one_invalid_parameter_type)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_one_extra_param)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // we use this count to process handling different array elements differently
     int count = 0;
@@ -549,8 +514,9 @@ TEST(AsyncJsonRPC, batch_rpc_calls_one_extra_param)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_one_less)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // we use this count to process handling different array elements differently
     int count = 0;
@@ -596,8 +562,9 @@ TEST(AsyncJsonRPC, batch_rpc_calls_one_less)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_no_id)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // we use this count to process handling different array elements differently
     int count = 0;
@@ -642,8 +609,9 @@ TEST(AsyncJsonRPC, batch_rpc_calls_no_id)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_no_method_and_no_jsonrpc_key)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // we use this count to process handling different array elements differently
     int count = 0;
@@ -686,8 +654,9 @@ TEST(AsyncJsonRPC, batch_rpc_calls_no_method_and_no_jsonrpc_key)
 
 TEST(AsyncJsonRPC, batch_rpc_calls_no_method_and_invalid_jsonrpc_key_and_invalid_param)
 {
-    boost::asio::io_context                            executor;
-    AsyncJsonRPC<boost::asio::io_context, std::string> rpc(executor);
+    boost::asio::io_context                                           executionContext;
+    AsyncJsonRPC<boost::asio::io_context::executor_type, std::string> rpc(
+        executionContext.get_executor());
 
     // error: no method and invalid jsonrpc key in each and invalid parameter (so 3/3 errors)
 

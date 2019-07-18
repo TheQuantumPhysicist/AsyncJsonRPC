@@ -29,10 +29,6 @@ add_library(async_json_rpc_lib
     src/JsonErrorCode.cpp
     )
 
-add_library(threadpool_lib
-    src/ThreadPool.cpp
-    )
-
 add_subdirectory(3rdparty)
 
 enable_testing()
