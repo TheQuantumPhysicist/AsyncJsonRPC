@@ -1,7 +1,7 @@
 # AsyncJsonRPC library
 
 ### Introduction
-The AsyncJsonRPC library is a simple, header-only, high-performance, thread-safe library that acts as the backend of a remote json-rpc system. It can be both synchronous and asynchronous. 
+The AsyncJsonRPC library is a simple, header-only, high-performance, thread-safe library that acts as the backend of a remote json-rpc system. It can be both synchronous and asynchronous.
 
 The library doesn't contain any communication protocol. The way it works, from a high-level perspective, is that you post a string containing the jsonrpc call [according to the jsonrpc 2.0 standard](https://www.jsonrpc.org/specification), and you will get a callback function called (of your choosing, defined with a closure) with the response.
 
@@ -15,9 +15,12 @@ There are ways to solve this problem, by wrapping everything in stateful classes
 
 AsyncJsonRPC for the rescue! So now, you can simply pass as many context variables to every RPC call in a thread-safe manner. Here's an example:
 
+Note: We're using a custom ThreadPool class, but you can also use an executor from boost::asio with [the executor interface](https://www.boost.org/doc/libs/1_70_0/doc/html/boost_asio/reference/executor.html)
+
 ```c++
     // you can add as many context types as you want! It's variadic.
-    AsyncJsonRPC<ContextType1, ContextType2> rpc; 
+    ThreadPool threadPool;
+    AsyncJsonRPC<ThreadPool, ContextType1, ContextType2> rpc(threadPool);
 
     // here we add a handler for the method "mymethod", which takes two json parameters, an integer and a string
     rpc.addHandler(
@@ -45,7 +48,7 @@ AsyncJsonRPC depends on two libraries:
 
 **libjsoncpp** is required for json parsing. That cannot be changed.
 
-**Boost** is necessary just for a [`flat_map`](https://www.boost.org/doc/libs/1_65_1/doc/html/boost/container/flat_map.html), which I used instead of `std::map`. This is done purely for performance. A `flat_map` uses a vector underneath, which guarantees cache locality and makes look-ups very fast. A hash-map isn't very suitable if performance is to be sought, because hashing strings isn't that fast. With a `flat_map`, for this specific problem where methods will be added once and will never be changed later. 
+**Boost** is necessary just for a [`flat_map`](https://www.boost.org/doc/libs/1_65_1/doc/html/boost/container/flat_map.html), which I used instead of `std::map`. This is done purely for performance. A `flat_map` uses a vector underneath, which guarantees cache locality and makes look-ups very fast. A hash-map isn't very suitable if performance is to be sought, because hashing strings isn't that fast. With a `flat_map`, for this specific problem where methods will be added once and will never be changed later.
 
 **But I don't want boost!** in that case, just change the type from `flat_map` to `std::map` if performance isn't a big deal for you.
 
