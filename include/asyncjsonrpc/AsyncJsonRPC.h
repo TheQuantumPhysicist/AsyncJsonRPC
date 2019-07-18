@@ -1,8 +1,6 @@
 #ifndef ASYNCJSONRPC_H
 #define ASYNCJSONRPC_H
 
-#include "detail/ThreadPool.h"
-
 #include "AsyncJsonRPCMethod.h"
 #include "JsonErrorCode.h"
 #include <functional>
@@ -10,13 +8,14 @@
 #include <stdexcept>
 #include <type_traits>
 
-template <typename... HandlerContext>
+template <typename ExecutionContext, typename... HandlerContext>
 class AsyncJsonRPC
 {
     boost::container::flat_map<std::string, AsyncJsonRPCMethod<HandlerContext...>> methods;
 
-    ThreadPool                         threadPool;
     std::function<void(std::string&&)> responseCallback;
+
+    ExecutionContext& executionContext;
 
     void basicRpcCallValidation(const Json::Value& root);
 
@@ -26,11 +25,7 @@ class AsyncJsonRPC
                                             HandlerContext... handlerContext);
 
 public:
-    AsyncJsonRPC(unsigned threadCount = std::thread::hardware_concurrency())
-    {
-        threadCount = (threadCount >= 1 ? threadCount : 1);
-        threadPool.start(threadCount);
-    }
+    AsyncJsonRPC(ExecutionContext& execContext) : executionContext(execContext) {}
 
     template <typename Handler>
     void addHandler(Handler handler, const std::string& methodName,
@@ -75,9 +70,9 @@ public:
     void asyncPost(const std::string& jsonCall, HandlerContext... handlerContext);
 };
 
-template <typename... HandlerContext>
-Json::Value AsyncJsonRPC<HandlerContext...>::PutResultInResponseContext(Json::Value&&      result,
-                                                                        const Json::Value& requestId)
+template <typename ExecutionContext, typename... HandlerContext>
+Json::Value AsyncJsonRPC<ExecutionContext, HandlerContext...>::PutResultInResponseContext(
+    Json::Value&& result, const Json::Value& requestId)
 {
     Json::Value response;
     response["jsonrpc"] = "2.0";
@@ -87,14 +82,15 @@ Json::Value AsyncJsonRPC<HandlerContext...>::PutResultInResponseContext(Json::Va
     return response;
 }
 
-template <typename... HandlerContext>
-void AsyncJsonRPC<HandlerContext...>::setResponseCallback(std::function<void(std::string&&)> callback)
+template <typename ExecutionContext, typename... HandlerContext>
+void AsyncJsonRPC<ExecutionContext, HandlerContext...>::setResponseCallback(
+    std::function<void(std::string&&)> callback)
 {
     responseCallback = callback;
 }
 
-template <typename... HandlerContext>
-void AsyncJsonRPC<HandlerContext...>::basicRpcCallValidation(const Json::Value& root)
+template <typename ExecutionContext, typename... HandlerContext>
+void AsyncJsonRPC<ExecutionContext, HandlerContext...>::basicRpcCallValidation(const Json::Value& root)
 {
     if (!root.isMember("method")) {
         throw JsonErrorCode::make_InvalidRequest();
@@ -118,9 +114,9 @@ void AsyncJsonRPC<HandlerContext...>::basicRpcCallValidation(const Json::Value& 
     }
 }
 
-template <typename... HandlerContext>
-Json::Value AsyncJsonRPC<HandlerContext...>::getResultForSingleRpcCall(const Json::Value& root,
-                                                                       HandlerContext... handlerContext)
+template <typename ExecutionContext, typename... HandlerContext>
+Json::Value AsyncJsonRPC<ExecutionContext, HandlerContext...>::getResultForSingleRpcCall(
+    const Json::Value& root, HandlerContext... handlerContext)
 {
     const std::string& methodName = root["method"].asString();
 
@@ -148,8 +144,8 @@ Json::Value AsyncJsonRPC<HandlerContext...>::getResultForSingleRpcCall(const Jso
     return result;
 }
 
-template <typename... HandlerContext>
-Json::Value AsyncJsonRPC<HandlerContext...>::getResponseForSingleRpcCall(
+template <typename ExecutionContext, typename... HandlerContext>
+Json::Value AsyncJsonRPC<ExecutionContext, HandlerContext...>::getResponseForSingleRpcCall(
     const Json::Value& root, const Json::Value& requestId, HandlerContext... handlerContext)
 {
     try {
@@ -171,8 +167,8 @@ Json::Value AsyncJsonRPC<HandlerContext...>::getResponseForSingleRpcCall(
     }
 }
 
-template <typename... HandlerContext>
-void AsyncJsonRPC<HandlerContext...>::removeHandler(const std::string& methodName)
+template <typename ExecutionContext, typename... HandlerContext>
+void AsyncJsonRPC<ExecutionContext, HandlerContext...>::removeHandler(const std::string& methodName)
 {
     if (methods.find(methodName) == methods.end()) {
         throw std::runtime_error("Method " + methodName + " does not exist");
@@ -180,20 +176,22 @@ void AsyncJsonRPC<HandlerContext...>::removeHandler(const std::string& methodNam
     methods.erase(methodName);
 }
 
-template <typename... HandlerContext>
-bool AsyncJsonRPC<HandlerContext...>::handlerExists(const std::string& methodName) const
+template <typename ExecutionContext, typename... HandlerContext>
+bool AsyncJsonRPC<ExecutionContext, HandlerContext...>::handlerExists(
+    const std::string& methodName) const
 {
     return methods.find(methodName) != methods.end();
 }
 
-template <typename... HandlerContext>
-std::size_t AsyncJsonRPC<HandlerContext...>::handlerCount() const
+template <typename ExecutionContext, typename... HandlerContext>
+std::size_t AsyncJsonRPC<ExecutionContext, HandlerContext...>::handlerCount() const
 {
     return methods.size();
 }
 
-template <typename... HandlerContext>
-void AsyncJsonRPC<HandlerContext...>::post(const std::string& jsonCall, HandlerContext... handlerContext)
+template <typename ExecutionContext, typename... HandlerContext>
+void AsyncJsonRPC<ExecutionContext, HandlerContext...>::post(const std::string& jsonCall,
+                                                             HandlerContext... handlerContext)
 {
     try {
 
@@ -253,11 +251,12 @@ void AsyncJsonRPC<HandlerContext...>::post(const std::string& jsonCall, HandlerC
     }
 }
 
-template <typename... HandlerContext>
-void AsyncJsonRPC<HandlerContext...>::asyncPost(const std::string& jsonCall,
-                                                HandlerContext... handlerContext)
+template <typename ExecutionContext, typename... HandlerContext>
+void AsyncJsonRPC<ExecutionContext, HandlerContext...>::asyncPost(const std::string& jsonCall,
+                                                                  HandlerContext... handlerContext)
 {
-    threadPool.push([this, jsonCall, handlerContext...]() { this->post(jsonCall, handlerContext...); });
+    executionContext.post(
+        [this, jsonCall, handlerContext...]() { this->post(jsonCall, handlerContext...); });
 }
 
 #endif // ASYNCJSONRPC_H

@@ -20,8 +20,7 @@ TEST(ThreadPool, main)
         std::vector<long> numsResults(nums.size());
         std::vector<long> numsSequentialResults(nums.size());
         try {
-            ThreadPool pool; // num of cores
-            pool.start();
+            ThreadPool pool;
             for (unsigned i = 0; i < nums.size(); i++) {
                 nums[i]                  = rand() % 1000;
                 numsResults[i]           = nums[i];

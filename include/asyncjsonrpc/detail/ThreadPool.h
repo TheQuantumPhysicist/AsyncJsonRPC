@@ -33,16 +33,19 @@ class ThreadPool
     int                               num_of_threads_running = 0;
     std::vector<std::thread>          _threads;
 
+    inline void start(const long NumOfThreads = std::thread::hardware_concurrency());
+
 protected:
     inline void thread_worker();
     inline void join_all();
 
 public:
-    inline ThreadPool();
+    inline ThreadPool(const long NumOfThreads = std::thread::hardware_concurrency());
     inline ~ThreadPool();
     inline void push(const std::function<void()>& task);
     inline void push(std::function<void()>&& task);
-    inline void start(const long NumOfThreads = std::thread::hardware_concurrency());
+    inline void post(const std::function<void()>& task);
+    inline void post(std::function<void()>&& task);
     inline void finish();
 };
 
@@ -76,7 +79,7 @@ void ThreadPool::join_all()
     }
 }
 
-ThreadPool::ThreadPool() {}
+ThreadPool::ThreadPool(const long NumOfThreads) { start(NumOfThreads); }
 
 ThreadPool::~ThreadPool() { this->finish(); }
 
@@ -93,6 +96,10 @@ void ThreadPool::push(std::function<void()>&& task)
     _tasks.push_back(std::move(task));
     _queueCond.notify_one();
 }
+
+void ThreadPool::post(const std::function<void()>& task) { push(task); }
+
+void ThreadPool::post(std::function<void()>&& task) { push(task); }
 
 void ThreadPool::start(const long NumOfThreads)
 {
