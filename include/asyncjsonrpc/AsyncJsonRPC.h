@@ -15,7 +15,7 @@ class AsyncJsonRPC
 
     std::function<void(std::string&&)> responseCallback;
 
-    const Executor& executor;
+    Executor executor;
 
     void basicRpcCallValidation(const Json::Value& root);
 
