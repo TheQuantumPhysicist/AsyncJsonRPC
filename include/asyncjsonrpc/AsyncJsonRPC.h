@@ -136,9 +136,9 @@ Json::Value AsyncJsonRPC<ExecutionContext, HandlerContext...>::getResultForSingl
     if (methodObj.parameterCount() > 0) {
         const Json::Value& paramsObj = root["params"];
         methodObj.verifyParameterTypes(paramsObj, root["id"]);
-        methodObj.invoke(paramsObj, result, handlerContext...);
+        methodObj.invoke(paramsObj, result, std::forward<HandlerContext>(handlerContext)...);
     } else {
-        methodObj.invoke(Json::Value(), result, handlerContext...);
+        methodObj.invoke(Json::Value(), result, std::forward<HandlerContext>(handlerContext)...);
     }
 
     return result;
@@ -153,7 +153,7 @@ Json::Value AsyncJsonRPC<ExecutionContext, HandlerContext...>::getResponseForSin
         basicRpcCallValidation(root);
 
         // single request
-        Json::Value result = getResultForSingleRpcCall(root, handlerContext...);
+        Json::Value result = getResultForSingleRpcCall(root, std::forward<HandlerContext>(handlerContext)...);
 
         // create the response string
         return PutResultInResponseContext(std::move(result), requestId);
@@ -221,7 +221,7 @@ void AsyncJsonRPC<ExecutionContext, HandlerContext...>::post(const std::string& 
                 const Json::Value& idVal = (root[i].isMember("id") ? root[i]["id"] : Json::Value());
 
                 // process every single request, and add it to the response array
-                Json::Value response = getResponseForSingleRpcCall(root[i], idVal, handlerContext...);
+                Json::Value response = getResponseForSingleRpcCall(root[i], idVal, std::forward<HandlerContext>(handlerContext)...);
                 arrayResponse.append(response);
             }
             std::string arrayResponseStr = JsonErrorCode::JsonValueToString(arrayResponse);
@@ -232,7 +232,7 @@ void AsyncJsonRPC<ExecutionContext, HandlerContext...>::post(const std::string& 
             basicRpcCallValidation(root);
 
             // single request
-            Json::Value response = getResponseForSingleRpcCall(root, root["id"], handlerContext...);
+            Json::Value response = getResponseForSingleRpcCall(root, root["id"], std::forward<HandlerContext>(handlerContext)...);
 
             // the result as string
             responseCallback(JsonErrorCode::JsonValueToString(response));
@@ -255,6 +255,7 @@ template <typename ExecutionContext, typename... HandlerContext>
 void AsyncJsonRPC<ExecutionContext, HandlerContext...>::asyncPost(const std::string& jsonCall,
                                                                   HandlerContext... handlerContext)
 {
+    // handlerContext here is deliberately passed by value; it's forwarded later
     executor.post([this, jsonCall, handlerContext...]() { this->post(jsonCall, handlerContext...); },
                   std::allocator<char>());
 }
