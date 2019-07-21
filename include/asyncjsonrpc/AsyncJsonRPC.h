@@ -13,7 +13,7 @@ class AsyncJsonRPC
 {
     boost::container::flat_map<std::string, AsyncJsonRPCMethod<HandlerContext...>> methods;
 
-    std::function<void(std::string&&)> responseCallback;
+    std::function<void(std::string&&)> responseCallback = [](std::string&&) {};
 
     Executor executor;
 
@@ -153,7 +153,8 @@ Json::Value AsyncJsonRPC<ExecutionContext, HandlerContext...>::getResponseForSin
         basicRpcCallValidation(root);
 
         // single request
-        Json::Value result = getResultForSingleRpcCall(root, std::forward<HandlerContext>(handlerContext)...);
+        Json::Value result =
+            getResultForSingleRpcCall(root, std::forward<HandlerContext>(handlerContext)...);
 
         // create the response string
         return PutResultInResponseContext(std::move(result), requestId);
@@ -221,7 +222,8 @@ void AsyncJsonRPC<ExecutionContext, HandlerContext...>::post(const std::string& 
                 const Json::Value& idVal = (root[i].isMember("id") ? root[i]["id"] : Json::Value());
 
                 // process every single request, and add it to the response array
-                Json::Value response = getResponseForSingleRpcCall(root[i], idVal, std::forward<HandlerContext>(handlerContext)...);
+                Json::Value response = getResponseForSingleRpcCall(
+                    root[i], idVal, std::forward<HandlerContext>(handlerContext)...);
                 arrayResponse.append(response);
             }
             std::string arrayResponseStr = JsonErrorCode::JsonValueToString(arrayResponse);
@@ -232,7 +234,8 @@ void AsyncJsonRPC<ExecutionContext, HandlerContext...>::post(const std::string& 
             basicRpcCallValidation(root);
 
             // single request
-            Json::Value response = getResponseForSingleRpcCall(root, root["id"], std::forward<HandlerContext>(handlerContext)...);
+            Json::Value response = getResponseForSingleRpcCall(
+                root, root["id"], std::forward<HandlerContext>(handlerContext)...);
 
             // the result as string
             responseCallback(JsonErrorCode::JsonValueToString(response));
